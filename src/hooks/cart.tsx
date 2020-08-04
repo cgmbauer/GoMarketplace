@@ -30,23 +30,79 @@ const CartProvider: React.FC = ({ children }) => {
 
   useEffect(() => {
     async function loadProducts(): Promise<void> {
-      // TODO LOAD ITEMS FROM ASYNC STORAGE
+      const merchandise = await AsyncStorage.getItem('@GoMarketplace:products');
+
+      if (merchandise) {
+        setProducts([...JSON.parse(merchandise)]);
+      }
     }
 
     loadProducts();
   }, []);
 
-  const addToCart = useCallback(async product => {
-    // TODO ADD A NEW ITEM TO THE CART
-  }, []);
+  const addToCart = useCallback(
+    async (product: Product) => {
+      const newProductAdded = product;
+      const isAlreadyAdded = products.findIndex(
+        merchandise => merchandise.id === newProductAdded.id,
+      );
+      const productsAlreadyAdded = products;
+      if (isAlreadyAdded < 0) {
+        // não existe, precisa adicionar quantity = 1
+        newProductAdded.quantity = 1;
+        setProducts([...products, newProductAdded]);
+      } else {
+        // existe, precisa atualizar quantity
+        productsAlreadyAdded[isAlreadyAdded].quantity += 1;
+        setProducts([...productsAlreadyAdded]);
+      }
+      await AsyncStorage.setItem(
+        '@GoMarketplace:products',
+        JSON.stringify(products),
+      );
+    },
+    [products],
+  );
 
-  const increment = useCallback(async id => {
-    // TODO INCREMENTS A PRODUCT QUANTITY IN THE CART
-  }, []);
+  const increment = useCallback(
+    async id => {
+      const productsAlreadyAdded = products;
+      const currentProduct = products.findIndex(
+        merchandise => merchandise.id === id,
+      );
+      productsAlreadyAdded[currentProduct].quantity += 1;
 
-  const decrement = useCallback(async id => {
-    // TODO DECREMENTS A PRODUCT QUANTITY IN THE CART
-  }, []);
+      setProducts([...productsAlreadyAdded]);
+      await AsyncStorage.setItem(
+        '@GoMarketplace:products',
+        JSON.stringify(products),
+      );
+    },
+    [products],
+  );
+
+  const decrement = useCallback(
+    async id => {
+      const productsAlreadyAdded = products;
+      const currentProduct = products.findIndex(
+        merchandise => merchandise.id === id,
+      );
+      productsAlreadyAdded[currentProduct].quantity -= 1;
+      if (productsAlreadyAdded[currentProduct].quantity < 1) {
+        const removeProduct = products.filter(
+          merchandise => merchandise.id !== id,
+        );
+        setProducts(removeProduct);
+      } else {
+        setProducts([...productsAlreadyAdded]);
+      }
+      await AsyncStorage.setItem(
+        '@GoMarketplace:products',
+        JSON.stringify(products),
+      );
+    },
+    [products],
+  );
 
   const value = React.useMemo(
     () => ({ addToCart, increment, decrement, products }),
